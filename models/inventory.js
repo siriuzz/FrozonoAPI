@@ -10,12 +10,13 @@ module.exports = (sequelize, DataTypes) => {
      * The `models/index` file will call this method automatically.
      */
     static associate(models) {
-      Inventory.belongsTo(models.Store);
-      Inventory.belongsTo(models.Employee);
+      Inventory.belongsTo(models.Store, { foreignKey: 'store_id', as: 'store' });
+      Inventory.belongsTo(models.Employee, { foreignKey: 'employee_id', as: 'employee' });
     }
   }
   Inventory.init({
     id: {
+      field: 'id',
       type: DataTypes.INTEGER,
       allowNull: false,
       primaryKey: true,
@@ -50,5 +51,13 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Inventory',
   });
+  sequelize.sync()
+    .then(() => {
+      console.log('Database and tables synced.');
+      // Start your Node.js application or perform other operations here
+    })
+    .catch((error) => {
+      console.error('Error syncing database:', error);
+    });
   return Inventory;
 };
