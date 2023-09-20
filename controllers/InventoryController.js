@@ -1,3 +1,4 @@
+const e = require('express');
 const { Inventory, Store, Employee } = require('../models'); // Importa los modelos necesarios
 const { Op } = require('sequelize'); // Importa el operador de sequelize
 
@@ -61,13 +62,66 @@ const deleteInventoryById = async (req, res) => {
     }
 };
 
+const postInventoriesFromCSV = async (row) => {
+    try {
+        const keys = Object.keys(row);
+        for (let i = 0; i < keys.length; i++) {
+            // console.log(`${keys[i]},${row[keys[i]]}`)
+            if ((row[keys[i]] === null || row[keys[i]] === undefined) && (i !== keys.length - 1 && keys[i] !== "")) {
+                return console.log("Elemento nulo");
+            }
+        }
+        let storeId;
+        let employeeId;
+        const [store, storeCreated] = await Store.findOrCreate({
+            where: {
+                name: row["Store"]
+            }
+        });
+        if (store) {
+            storeId = store.id;
+        }
+        else {
+            storeId = storeCreated.id;
+        }
 
+        const [employee, employeeCreated] = await Employee.findOrCreate({
+            where: {
+                name: row["Listed By"]
+            }
+        })
+
+        if (employee) {
+            employeeId = employee.id;
+        } else {
+            employeeId = employeeCreated.id;
+        }
+
+        if (row["Is Season Flavor"] === "Yes") {
+            row["Is Season Flavor"] = true;
+        } else {
+            row["Is Season Flavor"] = false;
+        }
+        // console.log(storeId, employeeId, row["Date"], row["Flavor"], row["Is Season Flavor"], row["Quantity"]);
+        Inventory.create({
+            store_id: storeId,
+            employee_id: employeeId,
+            date: row["Date"],
+            flavor: row["Flavor"],
+            is_season_flavor: row["Is Season Flavor"],
+            quantity: row["Quantity"]
+        });
+
+    } catch (error) {
+        // console.error(error);
+    }
+}
 
 module.exports = {
     getAllInventories,
     createInventory,
     getInventoryById,
     updateInventoryById,
-    deleteInventoryById
-
+    deleteInventoryById,
+    postInventoriesFromCSV
 };

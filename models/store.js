@@ -29,14 +29,14 @@ module.exports = (sequelize, DataTypes) => {
     sequelize,
     modelName: 'Store',
   });
-  sequelize.sync()
-    .then(() => {
-      console.log('Database and tables synced.');
-      // Start your Node.js application or perform other operations here
-    })
-    .catch((error) => {
-      console.error('Error syncing database:', error);
-    });
+  // sequelize.sync()
+  //   .then(() => {
+  //     console.log('Database and tables synced.');
+  //     // Start your Node.js application or perform other operations here
+  //   })
+  //   .catch((error) => {
+  //     console.error('Error syncing database:', error);
+  //   });
   return Store;
 };
 

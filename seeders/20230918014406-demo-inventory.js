@@ -18,9 +18,7 @@ module.exports = {
       date: new Date(),
       flavor: 'strawberry',
       is_season_flavor: false,
-      quantity: 1,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      quantity: 1
     }]);
   },
 

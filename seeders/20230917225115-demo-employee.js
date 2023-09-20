@@ -15,8 +15,6 @@ module.exports = {
 
     await queryInterface.bulkInsert('Employees', [{
       name: 'John',
-      createdAt: new Date(),
-      updatedAt: new Date()
     }]);
   },
 
