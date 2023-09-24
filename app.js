@@ -2,19 +2,22 @@ const express = require('express');
 const app = express();
 const router = express.Router();
 const InventoryController = require('./controllers/InventoryController');
+const StoreController = require('./controllers/StoreController');
 const multer = require('multer');
 const upload = multer({ dest: 'temp/' });
 const fs = require('fs');
+const { log } = require('console');
+const Papa = require('papaparse');
 require('dotenv').config();
 
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/inventory', router);
+app.use('/', router);
 
 router
-    .get('/', async (req, res, next) => {
+    .get('/inventory', async (req, res, next) => {
         try {
             const inventories = await InventoryController.getAllInventories(req, res);
 
@@ -26,7 +29,7 @@ router
             console.error(error);
             res.status(500).json({ error: 'Could not get inventories' });
         }
-    }).post('/', async (req, res) => {
+    }).post('/inventory', async (req, res) => {
         try {
             const newInventory = await InventoryController.createInventory(req, res);
             console.log(newInventory);
@@ -37,27 +40,25 @@ router
             res.status(500).json({ error: 'Could not create inventory' });
         }
     });
-router.post('/upload', upload.single('csv'), async (req, res) => {
 
-    const Papa = require('papaparse');
+
+
+router.post('/inventory/upload', upload.single('csv'), async (req, res) => {
     const file = fs.createReadStream(req.file.path);
     Papa.parse(file, {
         delimiter: ',',
-        newline: ',\n\c', // Newline character
+        newline: '', // Newline character
         header: true,
         dynamicTyping: true,
         skipEmptyLines: true, // Skip empty lines in the CSV
         transformHeader: header => header.trim(), // Trim header names
         transform: value => value.trim(), // Trim cell values
-        complete: function (results) {
+        complete: async function (results) {
             // console.log(results);
             for (let i = 0; i < results.data.length; i++) {
                 const element = results.data[i];
-
-                // console.log(element);
-                InventoryController.postInventoriesFromCSV(element);
+                await InventoryController.postInventoriesFromCSV(element);
             }
-            console.log(results.data.length);
             fs.unlink(req.file.path, (err) => {
                 if (err) {
                     console.error(err);
@@ -91,7 +92,7 @@ router.post('/upload', upload.single('csv'), async (req, res) => {
     // });
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/inventory/:id', async (req, res) => {
     try {
         const inventory = await InventoryController.getInventoryById(req, res);
         console.log(inventory);
@@ -109,7 +110,7 @@ router.get('/:id', async (req, res) => {
         console.error(error);
         res.status(500).json({ error: 'Could not update inventory' });
     }
-}).delete('/:id', async (req, res) => {
+}).delete('/inventory/:id', async (req, res) => {
     try {
         const inventory = await InventoryController.deleteInventoryById(req, res);
         console.log(inventory);
@@ -120,6 +121,17 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.get('/stores', async (req, res) => {
+    try {
+        const stores = await StoreController.getStores(req, res);
+        // Devuelve los inventarios en formato json
+        res.json(stores);
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener tiendas' });
+    }
+});
 
 app.listen(port, () => {
     console.log(`App listening on port ${port}`)
