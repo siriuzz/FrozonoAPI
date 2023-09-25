@@ -1,13 +1,101 @@
+const { parse } = require('papaparse');
 const { Inventory, Store, Employee } = require('../models'); // Importa los modelos necesarios
+const Op = require('sequelize').Op;
 
-const getAllInventories = async (req, res, next) => {
+
+async function getAllInventories(req, res) {
     try {
-        const inventories = await Inventory.findAll(); // Busca todos los inventarios
-        // Devuelve los inventarios en formato json
-        return inventories;
+        const queryParams = req.query;
+        const allEmpty = Object.values(queryParams).every(param => param === null || param === '');
+        if (!allEmpty) {
+            const page = parseInt(req.query.page) || 1;
+            const per_page = parseInt(req.query.per_page) || 10; //itemes por defecto
+            const { employee_id, store_id, quantity, startDate, endDate, flavor, is_season_flavor, operator } = req.query;
+            const startIndex = (page - 1) * per_page;
+
+            whereClause = {};
+            if (employee_id) {
+                if (Array.isArray(employee_id)) {
+                    whereClause[Op['or']] ? whereClause[Op['or']] : whereClause[Op['or']] = [];
+                    whereClause[Op['or']].push({ employee_id: employee_id.map(id => parseInt(id)) });
+                } else {
+                    whereClause.employee_id = parseInt(employee_id);
+                }
+            }
+
+            if (store_id) {
+                if (Array.isArray(store_id)) {
+                    whereClause[Op['or']] ? whereClause[Op['or']] : whereClause[Op['or']] = [];
+                    whereClause[Op['or']].push({ store_id: store_id.map(store_id => parseInt(store_id)) });
+                } else {
+                    whereClause.store_id = parseInt(store_id);
+                }
+            }
+
+
+            if (quantity) {
+                switch (operator ? operator : 'eq') {
+                    case 'gt':
+                        whereClause.quantity = { [Op.gt]: parseInt(quantity) };
+                        break;
+                    case "gte":
+                        whereClause.quantity = { [Op.gte]: parseInt(quantity) };
+                        break;
+                    case "lt":
+                        whereClause.quantity = { [Op.lt]: parseInt(quantity) };
+                        break;
+                    case "lte":
+                        whereClause.quantity = { [Op.lte]: parseInt(quantity) };
+                        break;
+                    case "eq":
+                        whereClause.quantity = { [Op.eq]: parseInt(quantity) };
+                        break;
+                    default:
+                        whereClause.quantity = { [Op.eq]: parseInt(quantity) };
+                        break;
+                }
+            }
+
+            if (startDate !== undefined && endDate !== undefined) {
+                console.log(startDate);
+                whereClause.date = {
+                    [Op.and]: [
+                        { [Op.gte]: new Date(startDate) },
+                        { [Op.lte]: new Date(endDate) }
+                    ]
+                }
+            } else if (startDate || endDate) {
+                whereClause.date = startDate ? new Date(startDate) : new Date(endDate);
+            }
+
+            if (flavor) {
+                if (Array.isArray(flavor)) {
+                    whereClause[Op['or']] ? whereClause[Op['or']] : whereClause[Op['or']] = [];
+                    whereClause[Op['or']].push(flavor.map(flavor => ({ flavor: { [Op.iLike]: `%${flavor}%` } })));
+                } else {
+                    whereClause.flavor = { [Op.like]: flavor };
+                }
+            }
+
+            if (is_season_flavor) {
+                whereClause.is_season_flavor = is_season_flavor === 'true' ? true : false;
+            }
+
+            const inventories = await Inventory.findAll({
+                offset: startIndex,
+                limit: per_page,
+                where: whereClause
+            }); // Busca todos los inventarios
+            return inventories;
+        } else {
+            const inventories = await Inventory.findAll(); // Busca todos los inventarios
+            // Devuelve los inventarios en formato json
+            return inventories;
+        }
+
 
     } catch (error) {
-        console.error(error);
+        // console.error(error);
         res.status(500).json({ error: 'Error al obtener inventarios' });
     }
 };
@@ -82,14 +170,6 @@ async function postInventoriesFromCSV(row) {
             }
         });
         storeId = store.id;
-        // if (store !== null) ;
-        // else {
-        //     const createdStore = Store.create({
-        //         name: row["Store"]
-        //     })
-        // }
-        // if (storeCreated) { console.log("Store created -----------------------------"); }
-        // storeId = store.id;
 
         const [employee, employeeCreated] = await Employee.findOrCreate({
             where: {

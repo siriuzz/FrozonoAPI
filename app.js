@@ -3,12 +3,15 @@ const app = express();
 const router = express.Router();
 const InventoryController = require('./controllers/InventoryController');
 const StoreController = require('./controllers/StoreController');
+const EmployeeController = require('./controllers/EmployeeController');
 const multer = require('multer');
 const upload = multer({ dest: 'temp/' });
 const fs = require('fs');
 const { log } = require('console');
 const Papa = require('papaparse');
 require('dotenv').config();
+const NodeCache = require('node-cache');
+const myCache = new NodeCache({ stdTTL: 100, checkperiod: 120, deleteOnExpire: true });
 
 const port = process.env.PORT || 3000;
 
@@ -17,7 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/', router);
 
 router
-    .get('/inventory', async (req, res, next) => {
+    .get('/inventory', async (req, res) => {
         try {
             const inventories = await InventoryController.getAllInventories(req, res);
 
@@ -121,15 +124,61 @@ router.get('/inventory/:id', async (req, res) => {
     }
 });
 
-router.get('/stores', async (req, res) => {
+router.get('/store', async (req, res, next) => {
+    const allStores = await StoreController.getStores(req, res);
+
+    const cacheData = allStores.map(store => {
+        return { key: "store" + store.id.toString(), val: store.name }
+
+    });
+
+    success = myCache.mset(cacheData)
+    console.log(success);
+    next();
+}, async (req, res) => {
     try {
-        const stores = await StoreController.getStores(req, res);
-        // Devuelve los inventarios en formato json
-        res.json(stores);
+        if (myCache.keys().length > 0) {
+            console.log("Cache hit");
+
+            res.json(myCache.mget(myCache.keys()));
+        } else {
+            const stores = await StoreController.getStores(req, res);
+            // Devuelve los inventarios en formato json
+            res.json(stores);
+        }
+
 
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Error al obtener tiendas' });
+    }
+});
+
+router.get('/employee', async (req, res, next) => {
+    const allEmployees = await EmployeeController.getEmployees(req, res);
+
+    const cacheData = allEmployees.map(employee => {
+        return { key: "employee" + employee.id.toString(), val: employee.name }
+
+    });
+
+    success = myCache.mset(cacheData)
+    console.log(success);
+    next();
+}, async (req, res) => {
+    try {
+        if (myCache.keys().length > 0) {
+            console.log("Cache hit");
+            res.json(myCache.mget(myCache.keys()));
+        } else {
+            const employees = await EmployeeController.getEmployees(req, res);
+            // Devuelve los inventarios en formato json
+            res.json(employees);
+        }
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error al obtener empleados' });
     }
 });
 
