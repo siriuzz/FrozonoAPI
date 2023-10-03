@@ -7,7 +7,6 @@ const EmployeeController = require('./controllers/EmployeeController');
 const multer = require('multer');
 const upload = multer({ dest: 'temp/' });
 const fs = require('fs');
-const { log } = require('console');
 const Papa = require('papaparse');
 require('dotenv').config();
 const NodeCache = require('node-cache');

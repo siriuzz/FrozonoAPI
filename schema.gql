@@ -1,0 +1,41 @@
+const { buildSchema } = require('graphql');
+
+const schema = buildSchema(`
+  type Query {
+    inventory: [Inventory!]!
+    inventorybyflavor(flavor: String!): [Inventory!]!
+    inventorybyshop(shop: String!): [Inventory!]!
+    inventorybydate(date: String!): [Inventory!]!
+  }
+  
+  type Mutation {
+    addinventory(inventory: InventoryInput!): Inventory!
+  }
+  
+  input InventoryInput {
+    shop: ShopInput!
+    employee: EmployeeInput!
+    icecream: IceCreamInput!
+    date: String!
+  }
+  
+  input IceCreamInput {
+    flavor: String!
+    count: Int!
+    is_season_flavor: Boolean!
+  }
+  
+  input ShopInput {
+    name: String!
+  }
+  
+  input EmployeeInput {
+    name: String!
+  }
+  
+  type IceCream {
+    flavor: String!
+    count: Int!
+    is_season_flavor: Boolean!
+  }
+`);
