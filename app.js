@@ -11,12 +11,15 @@ const Papa = require('papaparse');
 require('dotenv').config();
 const NodeCache = require('node-cache');
 const myCache = new NodeCache({ stdTTL: 100, checkperiod: 120, deleteOnExpire: true });
+const schema = require('./schema.js');
+const { createHandler } = require('graphql-http/lib/use/express');
 
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/', router);
+app.all('/graphql', createHandler({ schema }));
 
 router
     .get('/inventory', async (req, res) => {
